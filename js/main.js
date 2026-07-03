@@ -295,132 +295,132 @@ function castLine(x, y) {
     showMessage("Quietly waiting...", true);
     
     rippleInterval = setInterval(() => { 
-                if (isFishing && !ui.bobber.classList.contains('bite')) {
-                    createRipple(parseInt(ui.bobber.style.left), parseInt(ui.bobber.style.top));
-                }
-            }, 1400);
-            
-            setTimeout(checkBite, rodsData[currentRodId].time);
-        }
-
-        function checkBite() { 
-            if (!isFishing) return; 
-            Math.random() <= 0.85 ? fishBite() : fishIgnored(); 
-        }
-        
-        function fishIgnored() { 
-            showMessage("Nothing's biting...", true); 
-            ui.rod.style.transform = "rotate(-25deg)"; 
-            setTimeout(() => { resetFishingState(); }, 600); 
-        }
-        
-        function fishBite() {
-            clearInterval(rippleInterval); 
-            sfx.bite();
-            
-            ui.bobber.classList.add('bite'); 
-            ui.rod.style.transform = "rotate(-3deg)"; 
+        if (isFishing && !ui.bobber.classList.contains('bite')) {
             createRipple(parseInt(ui.bobber.style.left), parseInt(ui.bobber.style.top));
-            
-            showMessage("Oh! A bite!", false); 
-            ui.status.style.color = "#ffb703"; 
-            ui.status.style.textShadow = "0 2px 4px rgba(0,0,0,0.4)";
-            
-            setTimeout(reelInFish, 600);
         }
+    }, 1400);
+    
+    setTimeout(checkBite, rodsData[currentRodId].time);
+}
 
-        function reelInFish() {
-            if (!ui.bobber.classList.contains('bite')) return; 
-            sfx.cast(); 
-            ui.rod.style.transform = "rotate(-45deg)"; 
-            
-            setTimeout(() => { 
-                resetFishingState(); 
-                ui.status.style.color = "#fff"; 
-                showCatchPopup(); 
-            }, 500);
-        }
+function checkBite() { 
+    if (!isFishing) return; 
+    Math.random() <= 0.85 ? fishBite() : fishIgnored(); 
+}
 
-        function resetFishingState() {
-            ui.rod.style.transform = "rotate(60deg)"; 
-            ui.bobber.classList.remove('active', 'bite'); 
-            isFishing = false;
-            
-            clearInterval(rippleInterval); 
-            cancelAnimationFrame(lineAnimFrame); 
-            ui.linePath.style.display = 'none';
-        }
+function fishIgnored() { 
+    showMessage("Nothing's biting...", true); 
+    ui.rod.style.transform = "rotate(-25deg)"; 
+    setTimeout(() => { resetFishingState(); }, 600); 
+}
 
-        function showCatchPopup() {
-            const fish = rollForFish();
-            sfx.catch();
-            
-            const fishClass = `visual-${fish.name.toLowerCase().replace(/\s+/g, '-')}`;
-            
-            ui.popupIcon.innerHTML = `<span class="fish-icon">${fish.icon}</span>`; 
-            ui.popupName.innerText = fish.name; 
-            ui.popupRarity.innerText = fish.rarity;
-            ui.popup.className = `catch-popup popup-${fish.rarity} ${fishClass}`; 
-            ui.popup.classList.add('show'); 
-            ui.status.style.opacity = '0';
-            
-            setTimeout(() => {
-                ui.popup.classList.remove('show'); 
-                inventory.push(fish); 
-                addFishToUI(fish);
-                savePlayerData(); // Cloud database update
-            }, 2100);
-        }
+function fishBite() {
+    clearInterval(rippleInterval); 
+    sfx.bite();
+    
+    ui.bobber.classList.add('bite'); 
+    ui.rod.style.transform = "rotate(-3deg)"; 
+    createRipple(parseInt(ui.bobber.style.left), parseInt(ui.bobber.style.top));
+    
+    showMessage("Oh! A bite!", false); 
+    ui.status.style.color = "#ffb703"; 
+    ui.status.style.textShadow = "0 2px 4px rgba(0,0,0,0.4)";
+    
+    setTimeout(reelInFish, 600);
+}
 
-        function rollForFish() {
-            const rodLuck = rodsData[currentRodId].luck;
-            let wCommon = 100; 
-            let wRare = 15 * rodLuck; 
-            let wLegendary = 3 * rodLuck;
-            
-            let roll = Math.random() * (wCommon + wRare + wLegendary);
-            let rarityCategory = roll < wLegendary ? "legendary" : roll < wLegendary + wRare ? "rare" : "common";
-            
-            const possibleFish = fishTypes.filter(f => f.rarity === rarityCategory);
-            return possibleFish[Math.floor(Math.random() * possibleFish.length)];
-        }
+function reelInFish() {
+    if (!ui.bobber.classList.contains('bite')) return; 
+    sfx.cast(); 
+    ui.rod.style.transform = "rotate(-45deg)"; 
+    
+    setTimeout(() => { 
+        resetFishingState(); 
+        ui.status.style.color = "#fff"; 
+        showCatchPopup(); 
+    }, 500);
+}
 
-        function addFishToUI(fish) {
-            const fishClass = `visual-${fish.name.toLowerCase().replace(/\s+/g, '-')}`;
-            const card = document.createElement('div'); 
-            
-            card.className = `fish-card fish-${fish.rarity} ${fishClass}`;
-            card.innerHTML = `<span class="fish-icon">${fish.icon}</span><span class="fish-value">🪙 ${formatMoney(fish.value)}</span>`;
-            
-            ui.inventory.prepend(card);
-        }
+function resetFishingState() {
+    ui.rod.style.transform = "rotate(60deg)"; 
+    ui.bobber.classList.remove('active', 'bite'); 
+    isFishing = false;
+    
+    clearInterval(rippleInterval); 
+    cancelAnimationFrame(lineAnimFrame); 
+    ui.linePath.style.display = 'none';
+}
 
-        ui.sellBtn.addEventListener('click', () => {
-            if (inventory.length === 0) { 
-                sfx.error();
-                showMessage("No fish to sell yet!", true); 
-                return; 
-            }
-            sfx.sell();
-            let totalValue = inventory.reduce((sum, fish) => sum + fish.value, 0); 
-            coins += totalValue;
-            
-            ui.coins.innerText = formatMoney(coins); 
-            ui.coins.style.color = "#ffd700";
-            
-            setTimeout(() => {
-                ui.coins.style.color = "var(--text-main)";
-            }, 300);
-            
-            inventory = []; 
-            ui.inventory.innerHTML = ''; 
-            
-            showMessage(`Sold catch for 🪙${formatMoney(totalValue)}!`, true);
-            if (ui.shopModal.classList.contains('show')) {
-                renderShop(); 
-            }
-            savePlayerData(); // Cloud database update
-        });
+function showCatchPopup() {
+    const fish = rollForFish();
+    sfx.catch();
+    
+    const fishClass = `visual-${fish.name.toLowerCase().replace(/\s+/g, '-')}`;
+    
+    ui.popupIcon.innerHTML = `<span class="fish-icon">${fish.icon}</span>`; 
+    ui.popupName.innerText = fish.name; 
+    ui.popupRarity.innerText = fish.rarity;
+    ui.popup.className = `catch-popup popup-${fish.rarity} ${fishClass}`; 
+    ui.popup.classList.add('show'); 
+    ui.status.style.opacity = '0';
+    
+    setTimeout(() => {
+        ui.popup.classList.remove('show'); 
+        inventory.push(fish); 
+        addFishToUI(fish);
+        savePlayerData(); // Cloud database update
+    }, 2100);
+}
+
+function rollForFish() {
+    const rodLuck = rodsData[currentRodId].luck;
+    let wCommon = 100; 
+    let wRare = 15 * rodLuck; 
+    let wLegendary = 3 * rodLuck;
+    
+    let roll = Math.random() * (wCommon + wRare + wLegendary);
+    let rarityCategory = roll < wLegendary ? "legendary" : roll < wLegendary + wRare ? "rare" : "common";
+    
+    const possibleFish = fishTypes.filter(f => f.rarity === rarityCategory);
+    return possibleFish[Math.floor(Math.random() * possibleFish.length)];
+}
+
+function addFishToUI(fish) {
+    const fishClass = `visual-${fish.name.toLowerCase().replace(/\s+/g, '-')}`;
+    const card = document.createElement('div'); 
+    
+    card.className = `fish-card fish-${fish.rarity} ${fishClass}`;
+    card.innerHTML = `<span class="fish-icon">${fish.icon}</span><span class="fish-value">🪙 ${formatMoney(fish.value)}</span>`;
+    
+    ui.inventory.prepend(card);
+}
+
+ui.sellBtn.addEventListener('click', () => {
+    if (inventory.length === 0) { 
+        sfx.error();
+        showMessage("No fish to sell yet!", true); 
+        return; 
+    }
+    sfx.sell();
+    let totalValue = inventory.reduce((sum, fish) => sum + fish.value, 0); 
+    coins += totalValue;
+    
+    ui.coins.innerText = formatMoney(coins); 
+    ui.coins.style.color = "#ffd700";
+    
+    setTimeout(() => {
+        ui.coins.style.color = "var(--text-main)";
+    }, 300);
+    
+    inventory = []; 
+    ui.inventory.innerHTML = ''; 
+    
+    showMessage(`Sold catch for 🪙${formatMoney(totalValue)}!`, true);
+    if (ui.shopModal.classList.contains('show')) {
+        renderShop(); 
+    }
+    savePlayerData(); // Cloud database update
+});
 
 // --- CORE GAME LOADING SCREEN LOGIC ---
 const loadingBar = document.getElementById('loadingBar');
