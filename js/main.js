@@ -1,3 +1,11 @@
+// Global Error Safeguard (If anything crashes, your phone will alert you instantly!)
+window.addEventListener('error', function(e) {
+    alert("⚠️ GAME BRAIN CRASH:\n\nMessage: " + e.message + "\nFile: " + e.filename + "\nLine: " + e.lineno);
+});
+window.addEventListener('unhandledrejection', function(e) {
+    alert("⚠️ PROMISE CRASH:\n\nReason: " + e.reason);
+});
+
 // Import assets, engines, and saving triggers from other modules [1]
 import { fishTypes } from './fish-data.js';
 import { rodsData } from './rods-data.js';
@@ -79,12 +87,17 @@ signInAnonymously(auth).catch((error) => {
 // Re-populates variables and card arrays back into DOM elements on login
 function updateVisualsOnLoad() {
     ui.coins.innerText = formatMoney(coins);
-    ui.rod.style.background = rodsData[currentRodId].color;
-    ui.inventory.innerHTML = '';
     
-    inventory.forEach(fish => {
-        addFishToUI(fish);
-    });
+    // Safety check: Prevents crashing if your old save data has an invalid rod ID
+    const activeRod = rodsData.find(r => r.id === currentRodId) || rodsData[0];
+    ui.rod.style.background = activeRod.color;
+    
+    ui.inventory.innerHTML = '';
+    if (Array.isArray(inventory)) {
+        inventory.forEach(fish => {
+            if (fish) addFishToUI(fish);
+        });
+    }
 }
 
 // --- UTILITIES ---
@@ -210,7 +223,10 @@ window.buyRod = function(id, btnElement) {
 window.equipRod = function(id) {
     sfx.click();
     currentRodId = id; 
-    ui.rod.style.background = rodsData[id].color; 
+    
+    const activeRod = rodsData.find(r => r.id === currentRodId) || rodsData[0];
+    ui.rod.style.background = activeRod.color; 
+    
     renderShop();
     savePlayerData(); 
 };
@@ -300,7 +316,8 @@ function castLine(x, y) {
         }
     }, 1400);
     
-    setTimeout(checkBite, rodsData[currentRodId].time);
+    const activeRod = rodsData.find(r => r.id === currentRodId) || rodsData[0];
+    setTimeout(checkBite, activeRod.time);
 }
 
 function checkBite() { 
@@ -373,7 +390,8 @@ function showCatchPopup() {
 }
 
 function rollForFish() {
-    const rodLuck = rodsData[currentRodId].luck;
+    const activeRod = rodsData.find(r => r.id === currentRodId) || rodsData[0];
+    const rodLuck = activeRod.luck;
     let wCommon = 100; 
     let wRare = 15 * rodLuck; 
     let wLegendary = 3 * rodLuck;
