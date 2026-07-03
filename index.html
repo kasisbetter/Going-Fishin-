@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gone Fishin'</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap');
+
+        /* --- VARIABLE SYSTEM --- */
+        :root {
+            --sky-top: #74b9ff; --sky-bot: #a8d5ff;
+            --grass: #88cc6e; --grass-dark: #74b55c;
+            --pond: #5fa8d3; --pond-dark: #4a8cb3;
+            --text-main: #4a3320;
+            --common: #a0aab5; --rare: #f4b4c4; --legendary: #ffda75;
+        }
+
+        body {
+            margin: 0; padding: 0; font-family: 'Fredoka', sans-serif;
+            background: linear-gradient(to bottom, #74b9ff, #a8d5ff);
+            height: 100vh; overflow: hidden; user-select: none; 
+            display: flex; flex-direction: column; color: var(--text-main);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* --- LOADING SCREEN --- */
+        #loadingScreen { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            min-width: 100vw; min-height: 100vh;
+            background: linear-gradient(to bottom, #74b9ff, #a8d5ff); 
+            z-index: 99999; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; gap: 40px;
+            transition: opacity 0.4s ease-out; cursor: pointer; overflow: hidden; 
+        }
+        .loading-title { 
+            font-size: 3.5rem; color: white; text-shadow: 0 6px 15px rgba(0,0,0,0.15); 
+            z-index: 10; animation: breathe-title 4s ease-in-out infinite alternate; 
+            text-align: center; margin: 0;
+        }
+        @keyframes breathe-title { 0% { transform: scale(0.95); } 100% { transform: scale(1.05); } }
+        .loading-ui-wrapper { display: flex; flex-direction: column; align-items: center; z-index: 10; width: 100%; }
+        .loading-bar-container { 
+            width: 75%; max-width: 350px; height: 20px; background: rgba(255,255,255,0.3); 
+            border-radius: 10px; border: 3px solid white; overflow: hidden; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 12px; 
+        }
+        .loading-bar { width: 0%; height: 100%; background: #ffffff; border-radius: 5px; transition: width 2.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .start-prompt { 
+            font-size: 1.1rem; color: white; font-weight: 600; 
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2); opacity: 0.9; 
+            animation: pulse-text 2s infinite alternate; 
+        }
+        @keyframes pulse-text { 0% { transform: scale(1); } 100% { transform: scale(1.02); } }
+
+        /* --- SCENERY --- */
+        .sky-area { flex: 0 0 45%; position: relative; width: 100%; z-index: 0; }
+        .sun { position: absolute; top: 12vh; left: 10vw; width: 80px; height: 80px; background: #fff0a8; border-radius: 50%; box-shadow: 0 0 50px 15px rgba(255, 240, 168, 0.5), inset 0 0 15px #ffe373; z-index: 1; }
+        .cloud { position: absolute; background: rgba(255, 255, 255, 0.95); border-radius: 50px; animation: drift linear infinite; z-index: 2; }
+        .cloud::before, .cloud::after { content: ''; position: absolute; background: inherit; border-radius: 50%; }
+        .cloud1 { width: 120px; height: 35px; top: 15%; animation-duration: 50s; } .cloud1::before { width: 60px; height: 60px; top: -30px; left: 20px; } .cloud1::after { width: 45px; height: 45px; top: -15px; right: 20px; }
+        .cloud2 { width: 90px; height: 25px; top: 35%; animation-duration: 35s; animation-delay: -15s; } .cloud2::before { width: 40px; height: 40px; top: -20px; left: 15px; } .cloud2::after { width: 35px; height: 35px; top: -15px; right: 10px; }
+        @keyframes drift { 0% { transform: translate3d(-200px, 0, 0); } 100% { transform: translate3d(100vw, 0, 0); } }
+
+        .horizon-elements { 
+            position: absolute; bottom: 0; width: 100%; max-width: 1200px; 
+            left: 50%; transform: translateX(-50%); height: 0; z-index: 3; 
+        }
+        .tree { position: absolute; bottom: -2px; z-index: 2; }
+        .tree-layer { position: absolute; border-left: 25px solid transparent; border-right: 25px solid transparent; transform: translateX(-50%); }
+        .tree-trunk { position: absolute; bottom: -15px; left: -5px; width: 10px; height: 20px; }
+        .tree.fg .tree-layer.top { bottom: 35px; border-bottom: 45px solid #58993e; } .tree.fg .tree-layer.mid { bottom: 15px; border-bottom: 50px solid #468230; } .tree.fg .tree-layer.bot { bottom: -5px; border-bottom: 55px solid #366922; } .tree.fg .tree-trunk { background: #5c3a21; }
+        .tree.bg { z-index: 1; filter: brightness(0.85); } .tree.bg .tree-layer { border-left-width: 20px; border-right-width: 20px; } .tree.bg .tree-layer.top { bottom: 25px; border-bottom: 35px solid #457a30; } .tree.bg .tree-layer.mid { bottom: 10px; border-bottom: 40px solid #356322; } .tree.bg .tree-layer.bot { bottom: -5px; border-bottom: 45px solid #285217; } .tree.bg .tree-trunk { background: #4a2e1b; height: 15px; }
+
+        .cabin-container { position: absolute; z-index: 3; right: 17%; bottom: -2px; transform: scale(0.45); transform-origin: bottom center; filter: brightness(0.75) contrast(0.85) opacity(0.95); }
+        .cabin-body { width: 80px; height: 50px; background: repeating-linear-gradient(to bottom, #523720, #523720 6px, #422513 6px, #422513 8px); border-radius: 2px; position: relative; }
+        .cabin-roof { position: absolute; top: -30px; left: -10px; width: 0; height: 0; border-left: 50px solid transparent; border-right: 50px solid transparent; border-bottom: 30px solid #26160b; }
+        .chimney { position: absolute; top: -35px; right: 12px; width: 12px; height: 20px; background: #612525; }
+        .cabin-window { position: absolute; top: 12px; width: 12px; height: 12px; background: #11181e; border: 2px solid #26160b; } .cabin-window::after, .cabin-window::before { content: ''; position: absolute; background: #2e1b10; } .cabin-window::after { top: 50%; left: 0; width: 100%; height: 2px; transform: translateY(-50%); } .cabin-window::before { top: 0; left: 50%; width: 2px; height: 100%; transform: translateX(-50%); } .cabin-window.left { left: 8px; } .cabin-window.right { right: 8px; }
+        .cabin-door { position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); width: 14px; height: 24px; background: #26160b; } .cabin-porch { position: absolute; bottom: 0; left: -2px; width: 84px; height: 4px; background: #301d10; border-radius: 2px; } .cabin-pillar { position: absolute; bottom: 4px; width: 3px; height: 16px; background: #301d10; } .cabin-pillar.left { left: 4px; } .cabin-pillar.right { right: 4px; }
+
+        .ground-area { flex: 1; background: var(--grass); position: relative; border-top: 2px solid var(--grass-dark); box-shadow: inset 0 20px 40px rgba(255,255,255,0.1); display: flex; justify-content: center; z-index: 4; }
+        .pond-container { position: absolute; top: 40%; left: 50%; transform: translate3d(-50%, -50%, 0); width: 85vw; max-width: 380px; height: 35vw; max-height: 150px; background: linear-gradient(160deg, var(--pond), var(--pond-dark)); border-radius: 56% 44% 52% 48% / 44% 53% 47% 56%; box-shadow: inset 0 8px 15px rgba(255,255,255,0.3), inset 0 -8px 15px rgba(0,0,0,0.1), 0 0 0 4px #76b05e, 0 8px 20px rgba(0,0,0,0.1); cursor: pointer; overflow: hidden; z-index: 5; }
+        .lilypad { position: absolute; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="padGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%2381c784" /><stop offset="100%" stop-color="%23388e3c" /></linearGradient></defs><path d="M50 95 C25.147 95 5 74.853 5 50 C5 25.147 25.147 5 50 5 C73.16 5 92.25 22.5 94.76 45 L50 50 L84.64 79.28 C76.7 90.7 64 95 50 95 Z" fill="url(%23padGrad)" stroke="%231b5e20" stroke-width="2"/></svg>'); background-size: contain; background-repeat: no-repeat; pointer-events: none; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.15)); }
+        .lilypad.flower::after { content: ''; position: absolute; top: 15%; left: 15%; width: 45%; height: 45%; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M50 80 Q 20 50 50 20 Q 80 50 50 80" fill="%23f48fb1"/><path d="M50 80 Q 10 60 30 30 Q 50 60 50 80" fill="%23f8bbd0"/><path d="M50 80 Q 90 60 70 30 Q 50 60 50 80" fill="%23f8bbd0"/><circle cx="50" cy="70" r="8" fill="%23fff59d"/></svg>'); background-size: contain; background-repeat: no-repeat; transform: rotate(-20deg); }
+        .pollen { position: absolute; width: 4px; height: 4px; background: rgba(255, 255, 255, 0.6); border-radius: 50%; pointer-events: none; z-index: 6; animation: drift-pollen 8s infinite linear; }
+        @keyframes drift-pollen { 0% { transform: translate3d(0,0,0); opacity: 0; } 20% { opacity: 0.7; } 80% { opacity: 0.7; } 100% { transform: translate3d(30px, -50px, 0); opacity: 0; } }
+
+        /* --- UI OVERLAYS --- */
+        .game-ui-left { position: absolute; top: 15px; left: 15px; display: flex; flex-direction: column; gap: 8px; z-index: 20; pointer-events: none; }
+        .game-ui-right { position: absolute; top: 15px; right: 15px; z-index: 20; pointer-events: auto; }
+        .coin-sign { background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 6px 14px; color: var(--text-main); font-weight: 700; font-size: 1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.1), inset 0 -3px 0 rgba(0,0,0,0.05); display: inline-block; pointer-events: auto; border: 2px solid #edf2f7; }
+        .action-btn { background: #fff; border: none; border-radius: 15px; padding: 8px 16px; font-family: inherit; font-size: 0.95rem; font-weight: 700; color: #444; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1), 0 4px 0 #ddd; transition: transform 0.1s; pointer-events: auto; }
+        .action-btn:active { transform: translate3d(0, 4px, 0); box-shadow: 0 0 0 #ddd; }
+        .sell-btn { background: #ffeaa7; color: #e65100; box-shadow: 0 4px 10px rgba(0,0,0,0.1), 0 4px 0 #ffca28; } .sell-btn:active { box-shadow: 0 0 0 #ffca28; }
+        .music-btn { background: #e0f7fa; color: #00838f; box-shadow: 0 4px 10px rgba(0,0,0,0.1), 0 4px 0 #b2ebf2; display: flex; align-items: center; gap: 5px; } .music-btn:active { box-shadow: 0 0 0 #b2ebf2; }
+        .shop-icon-btn { background: rgba(255, 255, 255, 0.95); border: 2px solid white; border-radius: 20px; padding: 8px 16px; font-family: inherit; font-size: 1rem; font-weight: 700; color: #1976d2; cursor: pointer; box-shadow: 0 6px 15px rgba(0,0,0,0.12); display: flex; align-items: center; gap: 6px; transition: transform 0.1s; } .shop-icon-btn:active { transform: scale(0.95); }
+        #statusMessage { position: absolute; top: 18vh; width: 100%; text-align: center; font-size: 1.4rem; font-weight: 600; color: #fff; text-shadow: 0 2px 5px rgba(0,0,0,0.4); pointer-events: none; transition: opacity 0.5s ease-in-out; z-index: 10; opacity: 0; }
+
+        /* --- MODALS --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); z-index: 100; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: opacity 0.25s ease, visibility 0.25s; }
+        .modal-overlay.show { opacity: 1; visibility: visible; }
+        .modal-content { background: #ffffff; width: 90%; max-width: 440px; max-height: 75vh; border-radius: 24px; padding: 22px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); position: relative; display: flex; flex-direction: column; transform: translate3d(0, 15px, 0); transition: transform 0.25s ease; overflow: hidden; }
+        .modal-overlay.show .modal-content { transform: translate3d(0,0,0); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 12px; border-bottom: 2px solid #f0f0f0; flex-shrink: 0; }
+        .modal-header h2 { margin: 0; font-size: 1.8rem; color: var(--text-main); display: flex; align-items: center; gap: 10px; }
+        .index-btn { background: #81d4fa; color: #01579b; border: 2px solid #29b6f6; border-radius: 12px; padding: 6px 12px; font-weight: 700; cursor: pointer; box-shadow: 0 3px 0 #29b6f6; transition: transform 0.1s; font-family: inherit; font-size: 0.9rem; margin-right: 10px; } .index-btn:active { transform: translateY(3px); box-shadow: none; }
+        .close-btn { background: #ff5252; color: white; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 1.2rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #d32f2f; transition: transform 0.1s; display: flex; align-items: center; justify-content: center; } .close-btn:active { transform: translate3d(0, 4px, 0); box-shadow: none; }
+        
+        .modal-list { display: flex; flex-direction: column; gap: 12px; padding-right: 5px; padding-bottom: 15px; overflow-y: auto; flex: 1 1 auto; min-height: 0; } 
+        .modal-list::-webkit-scrollbar, .index-grid::-webkit-scrollbar { width: 6px; } 
+        .modal-list::-webkit-scrollbar-thumb, .index-grid::-webkit-scrollbar-thumb { background: #cfd8dc; border-radius: 10px; }
+        .modal-item { display: flex; align-items: center; gap: 12px; background: #ffffff; border: 2px solid #edf2f7; border-radius: 16px; padding: 10px; position: relative; }
+        .index-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; padding-right: 5px; padding-bottom: 15px; overflow-y: auto; flex: 1 1 auto; min-height: 0; }
+        .index-card { background: white; border: 2px solid #edf2f7; border-radius: 16px; padding: 10px 10px 14px 10px; display: flex; flex-direction: column; align-items: center; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.02); position: relative; overflow: hidden; min-height: 155px; justify-content: space-between; }
+        .index-icon-wrap { font-size: 2.2rem; background: #f8f9fa; border-radius: 12px; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; margin-bottom: 4px; border: 2px solid #eceff1; position: relative; flex-shrink: 0; }
+        .index-card h4 { margin: 0 0 2px 0; font-size: 1.05rem; color: var(--text-main); position: relative; z-index: 2; line-height: 1.2; }
+        .index-card .req { font-size: 0.75rem; color: #78909c; font-weight: 600; margin-bottom: 4px; line-height: 1.1; position: relative; z-index: 2; }
+        .index-card .val { font-weight: 800; color: #e17055; background: #fff5f2; padding: 3px 8px; border-radius: 10px; font-size: 0.85rem; position: relative; z-index: 2; margin-top: auto; }
+
+        /* --- FISH & ROD VISUALS --- */
+        @keyframes starfish-wiggle { 0% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.06, 0.94) rotate(3deg); } 100% { transform: scale(1) rotate(0deg); } }
+        .cute-starfish { animation: starfish-wiggle 3s infinite ease-in-out; transform-origin: center center; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15)); }
+        
+        .visual-minnow .fish-icon { filter: grayscale(1) brightness(1.25) contrast(0.9) drop-shadow(0 2px 4px rgba(0,0,0,0.1)); }
+        .visual-trout .fish-icon { filter: saturate(1.2) hue-rotate(-20deg) brightness(0.95); }
+        .visual-pink-koi .fish-icon { filter: saturate(1.4) hue-rotate(345deg); }
+        .visual-golden-bass { background: linear-gradient(135deg, #443c1b, #ffd32a, #443c1b) !important; background-size: 200% 200% !important; }
+        .visual-golden-bass .fish-icon { filter: sepia(1) saturate(5) hue-rotate(5deg) brightness(1.1) drop-shadow(0 0 10px #ffca28); }
+
+        @keyframes legendary-card-shimmer { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        .visual-starfish, .visual-golden-bass { background: linear-gradient(135deg, #2d3436, #1e272e, #2d3436) !important; background-size: 200% 200% !important; animation: legendary-card-shimmer 6s infinite ease-in-out !important; border: 2px solid #ffda75 !important; box-shadow: 0 4px 15px rgba(255, 218, 117, 0.45) !important; }
+        .visual-starfish .index-icon-wrap, .visual-golden-bass .index-icon-wrap { border-color: transparent; background: transparent; }
+        .visual-starfish h4, .visual-starfish .req, .visual-starfish .val, .visual-golden-bass h4, .visual-golden-bass .req, .visual-golden-bass .val { color: white !important; }
+        .visual-starfish .val, .visual-golden-bass .val { background: rgba(255,255,255,0.2) !important; }
+        
+        .visual-golden-bass::before, .visual-golden-bass::after, .visual-starfish::before, .visual-starfish::after { content: '✨'; position: absolute; font-size: 1.2rem; animation: float-sparkle 2s infinite alternate ease-in-out; z-index: 1; pointer-events: none; }
+        .visual-golden-bass::before, .visual-starfish::before { top: 10px; left: 10px; animation-delay: 0s; } .visual-golden-bass::after, .visual-starfish::after { bottom: 10px; right: 10px; animation-delay: 1s; }
+        @keyframes float-sparkle { 0% { transform: translateY(0) scale(0.8); opacity: 0.5; } 100% { transform: translateY(-10px) scale(1.2); opacity: 1; } }
+
+        .shop-rod-visual { position: relative; width: 55px; height: 55px; border-radius: 12px; background: #f8f9fa; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; border: 2px solid #eceff1; }
+        .s-pole { position: absolute; width: 4px; height: 85%; transform: rotate(45deg); border-radius: 2px; z-index: 2; }
+        .s-reel { position: absolute; width: 12px; height: 16px; transform: rotate(45deg) translate(8px, 8px); border-radius: 3px; z-index: 3; }
+        .shop-rod-visual.legendary-aura { border-color: var(--legendary); background: #fffdf5; box-shadow: 0 0 10px rgba(255,218,117,0.4); } 
+        .shop-rod-visual.poseidon-aura { border-color: #00bcd4; background: #e0f7fa; box-shadow: 0 0 10px rgba(0,188,212,0.4); }
+        .aura-glow { position: absolute; width: 130%; height: 130%; z-index: 1; opacity: 0.5; }
+        .legendary-aura .aura-glow { background: radial-gradient(circle, #ffeb3b 0%, transparent 60%); } .poseidon-aura .aura-glow { background: radial-gradient(circle, #4dd0e1 0%, transparent 60%); }
+        .particle { position: absolute; font-size: 11px; z-index: 4; animation: float-up 2s infinite ease-in; } .p1 { left: 10%; bottom: 10%; animation-delay: 0s; } .p2 { right: 15%; bottom: 25%; animation-delay: 1s; }
+        @keyframes float-up { 0% { transform: translate3d(0, 10px, 0) scale(0.6); opacity: 0; } 50% { opacity: 1; } 100% { transform: translate3d(0, -15px, 0) scale(1); opacity: 0; } }
+
+        .item-info { flex-grow: 1; } .item-info h4 { margin: 0 0 2px 0; font-size: 1.15rem; color: #2d3436; }
+        .item-stats { font-size: 0.8rem; color: #636e72; font-weight: 600; display: flex; gap: 6px; }
+        .stat-luck { color: #e17055; background: #ffeaa7; padding: 1px 5px; border-radius: 5px; } .stat-time { color: #0984e3; background: #dfe6e9; padding: 1px 5px; border-radius: 5px; }
+
+        .buy-btn { background: #00cec9; color: white; border: none; padding: 8px 12px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 0.9rem; box-shadow: 0 3px 0 #00b894; transition: transform 0.1s; font-family: inherit; width: 100px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .buy-btn:active { transform: translate3d(0, 3px, 0); box-shadow: 0 0 0 #00b894; }
+        .buy-btn.equip { background: #55efc4; box-shadow: 0 3px 0 #00b894; color: #2d3436; }
+        .buy-btn.equipped { background: #00b894; color: white; box-shadow: none; cursor: default; transform: translate3d(0, 3px, 0); }
+        .buy-btn.disabled { background: #f1f2f6; color: #b2bec3; box-shadow: 0 3px 0 #dfe6e9; cursor: not-allowed; }
+        .buy-btn.purchased { background: #74b9ff !important; box-shadow: 0 3px 0 #0984e3 !important; color: white !important; }
+
+        /* --- FISHING LINE PHYSICS --- */
+        .player-area { position: absolute; bottom: 125px; left: 50%; z-index: 7; pointer-events: none; }
+        .rod { position: absolute; bottom: 0; left: 50%; width: 6px; height: 180px; background: linear-gradient(to top, #4a2e1b 0%, #8b5a2b 100%); border-radius: 4px; transform-origin: bottom center; transform: translate3d(0,0,0) rotate(60deg); transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1); will-change: transform; }
+        .rod::after { content: ''; position: absolute; bottom: 30px; left: -6px; width: 16px; height: 24px; background: #cfd8dc; border: 2px solid #78909c; border-radius: 4px; }
+        .rod-tip { position: absolute; top: 0; left: 2px; width: 2px; height: 2px; }
+        #fishingLineSvg { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 6; }
+        #linePath { fill: none; stroke: rgba(255, 255, 255, 0.75); stroke-width: 1.5; display: none; }
+        
+        .bobber { position: absolute; width: 14px; height: 14px; background: #ff4757; border-radius: 50%; border: 2px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.15); transform: translate3d(-50%, -50%, 0) scale(0); will-change: transform; pointer-events: none; }
+        .bobber.active { transform: translate3d(-50%, -50%, 0) scale(1); animation: float-bobber 2s infinite ease-in-out; } 
+        .bobber.bite { animation: bite-shake 0.1s infinite ease-in-out; background: #ff6b81; }
+        @keyframes float-bobber { 0%, 100% { transform: translate3d(-50%, -50%, 0); } 50% { transform: translate3d(-50%, -59%, 0); } } 
+        @keyframes bite-shake { 0%, 100% { transform: translate3d(-50%, -46%, 0) scale(1.15); } 50% { transform: translate3d(-50%, -54%, 0) scale(1.15); } }
+        .ripple { position: absolute; border: 2px solid rgba(255,255,255,0.7); border-radius: 50%; transform: translate3d(-50%, -50%, 0) scale(0); pointer-events: none; } 
+        @keyframes ripple-effect { to { transform: translate3d(-50%, -50%, 0) scale(2.6); opacity: 0; } }
+
+        /* --- POPUP & INVENTORY --- */
+        .catch-popup { position: absolute; top: 45%; left: 50%; transform: translate3d(-50%, -40%, 0) scale(0.8); background: #ffffff; padding: 25px 45px; border-radius: 24px; border: 4px solid #edf2f7; box-shadow: 0 15px 35px rgba(0,0,0,0.15); text-align: center; z-index: 20; opacity: 0; pointer-events: none; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.15), opacity 0.4s; }
+        .catch-popup.show { transform: translate3d(-50%, -50%, 0) scale(1); opacity: 1; }
+        .catch-icon-large { font-size: 5rem; margin-bottom: 8px; position: relative; z-index: 5; display: flex; justify-content: center; align-items: center; } 
+        .catch-name-large { font-size: 2rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px; position: relative; z-index: 5; }
+        .catch-rarity-badge { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 0.95rem; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 1px; position: relative; z-index: 5; }
+        .popup-common { border-color: var(--common); } .popup-common .catch-rarity-badge { background: var(--common); }
+        .popup-rare { border-color: var(--rare); background: #fffdfd; } .popup-rare .catch-rarity-badge { background: var(--rare); }
+        @keyframes legendary-glow-pulse { 0% { box-shadow: 0 0 20px rgba(255, 223, 0, 0.4), inset 0 0 10px rgba(255, 223, 0, 0.2); } 50% { box-shadow: 0 0 35px rgba(255, 223, 0, 0.8), inset 0 0 20px rgba(255, 223, 0, 0.4); } 100% { box-shadow: 0 0 20px rgba(255, 223, 0, 0.4), inset 0 0 10px rgba(255, 223, 0, 0.2); } }
+        .popup-legendary { border: 4px solid #ffda75 !important; background: #fffefb; animation: legendary-glow-pulse 2s infinite ease-in-out; } .popup-legendary .catch-rarity-badge { background: #e5b323; }
+
+        .inventory-area { position: absolute; bottom: 0; width: 100%; height: 115px; background: rgba(255, 255, 255, 0.85); border-top: 3px solid #edf2f7; padding: 15px 20px; box-sizing: border-box; display: flex; gap: 12px; overflow-x: auto; align-items: center; z-index: 15; box-shadow: 0 -5px 20px rgba(0,0,0,0.02); }
+        .inventory-area::-webkit-scrollbar { display: none; }
+        .fish-card { background: white; border-radius: 14px; padding: 8px 12px; display: flex; flex-direction: column; align-items: center; min-width: 65px; box-shadow: 0 4px 6px rgba(0,0,0,0.044); border: 2px solid #eceff1; position: relative; overflow: hidden; }
+        .fish-card.fish-legendary { border-color: #ffda75 !important; animation: legendary-glow-pulse 2.5s infinite ease-in-out !important; }
+        .fish-icon { font-size: 2rem; position: relative; z-index: 5; display: flex; justify-content: center; align-items: center; } 
+        .fish-value { font-size: 0.85rem; font-weight: 700; color: #78909c; margin-top: 2px; position: relative; z-index: 5; }
+    </style>
+</head>
+<body>
+
+    <!-- LOADING SCREEN -->
+    <div id="loadingScreen">
+        <div class="cloud cloud1" style="top: 10%; animation-duration: 40s;"></div>
+        <div class="cloud cloud2" style="top: 25%; left: 20%; animation-duration: 30s;"></div>
+        <div class="cloud cloud1" style="top: 65%; left: 50%; animation-duration: 35s; transform: scale(0.8);"></div>
+        <div class="cloud cloud2" style="top: 80%; left: 10%; animation-duration: 25s; transform: scale(1.2);"></div>
+        
+        <h1 class="loading-title">Gone Fishin'</h1>
+        
+        <div class="loading-ui-wrapper">
+            <div class="loading-bar-container">
+                <div class="loading-bar" id="loadingBar"></div>
+            </div>
+            <div class="start-prompt">Tap Screen to Play</div>
+        </div>
+    </div>
+
+    <!-- MAIN GAME LAYOUT -->
+    <div class="sky-area">
+        <div class="sun"></div>
+        <div class="cloud cloud1"></div>
+        <div class="cloud cloud2"></div>
+        
+        <div class="horizon-elements">
+            <div class="tree bg" style="left: -2%; transform: scale(0.6);"><div class="tree-trunk"></div><div class="tree-layer bot"></div><div class="tree-layer mid"></div><div class="tree-layer top"></div></div>
+            <div class="tree bg" style="left: 10%; transform: scale(0.5);"><div class="tree-trunk"></div><div class="tree-layer bot"></div><div class="tree-layer mid"></div><div class="tree-layer top"></div></div>
+            <div class="tree bg" style="left: 24%; transform: scale(0.65);"><div class="tree-trunk"></div><div class="tree-layer bot"></div><div class="tree-layer mid"></div><div class="tree-layer top"></div></div>
+            <div class="tree bg" style="right: 28%; transform: scale(0.5);"><div class="tree-trunk"></div><div class="tree-layer bot"></div><div class="tree-layer mid"></div><div class="tree-layer top"></div></div>
+            <div class="tree bg" style="right: 4%; transform: scale(0.65);"><div class="tree-trunk"></div><div class="tree-layer bot"></div><div class="tree-layer mid"></div><div class="tree-layer top"></div></div>
+
+            <div class="cabin-container">
+                <div class="smoke smoke1"></div><div class="smoke smoke2"></div>
+                <div class="cabin-body">
+                    <div class="chimney"></div><div class="cabin-roof"></div><div class="cabin-window left"></div><div class="cabin-window right"></div><div class="cabin-door"></div><div class="cabin-porch"></div><div class="cabin-pillar left"></div><div class="cabin-pillar right"></div>
+                </div>
+            </div>
+
+            <div class="tree bg" style="right: 17%; bottom: 10px; transform: scale(0.55); z-index: 4;"><div class="tree-trunk"></div><div class="tree-layer bot"></div><div class="tree-layer mid"></div><div class="tree-layer top"></div></div>
+            <div class="tree fg" style="right: 15%; bottom: -5px; transform: scale(0.9); z-index: 4;"><div class="tree-trunk"></div><div class="tree-layer bot"></div><div class="tree-layer mid"></div><div class="tree-layer top"></div></div>
+            <div class="tree fg" style="right: 21%; bottom: 0; transform: scale(0.75); z-index: 4;"><div class="tree-trunk"></div><div class="tree-layer bot"></div><div class="tree-layer mid"></div><div class="tree-layer top"></div></div>
+
+            <div class="tree fg" style="left: -1%; transform: scale(1.15);"><div class="tree-trunk"></div><div class="tree-layer bot"></div><div class="tree-layer mid"></div><div class="tree-layer top"></div></div>
+            <div class="tree fg" style="left: 14%; transform: scale(1.05);"><div class="tree-trunk"></div><div class="tree-layer bot"></div><div class="tree-layer mid"></div><div class="tree-layer top"></div></div>
+            <div class="tree fg" style="left: 30%; transform: scale(1.2);"><div class="tree-trunk"></div><div class="tree-layer bot"></div><div class="tree-layer mid"></div><div class="tree-layer top"></div></div>
+            <div class="tree fg" style="right: 6%; transform: scale(0.95);"><div class="tree-trunk"></div><div class="tree-layer bot"></div><div class="tree-layer mid"></div><div class="tree-layer top"></div></div>
+            <div class="tree fg" style="right: -4%; transform: scale(1.25);"><div class="tree-trunk"></div><div class="tree-layer bot"></div><div class="tree-layer mid"></div><div class="tree-layer top"></div></div>
+        </div>
+    </div>
+
+    <div class="game-ui-left">
+        <div class="coin-sign">🪙 <span id="coinCount">0</span></div>
+        <button class="action-btn sell-btn" id="sellBtn">💰 Sell Catch</button>
+        <button class="action-btn music-btn" id="musicBtn">🔈 Lofi Off</button>
+    </div>
+    <div class="game-ui-right">
+        <button class="shop-icon-btn" id="openShopBtn">🛒 Shop</button>
+    </div>
+    
+    <div id="statusMessage"></div>
+
+    <div class="ground-area" id="groundArea">
+        <div class="pond-container" id="pond">
+            <div class="lilypad" style="width: 35px; height: 35px; top: 15%; left: 15%; transform: rotate(15deg);"></div>
+            <div class="lilypad flower" style="width: 25px; height: 25px; top: 35%; left: 25%; transform: rotate(-30deg);"></div>
+            <div class="lilypad" style="width: 45px; height: 45px; bottom: 20%; right: 20%; transform: rotate(80deg);"></div>
+            <div class="bobber" id="bobber"></div>
+        </div>
+    </div>
+
+    <div class="player-area">
+        <div class="rod" id="rod">
+            <div class="rod-tip" id="rodTip"></div>
+        </div>
+    </div>
+    
+    <svg id="fishingLineSvg"><path id="linePath" d="M0,0 Q0,0 0,0" /></svg>
+
+    <div class="catch-popup" id="catchPopup">
+        <div class="catch-icon-large" id="catchIcon"></div>
+        <div class="catch-name-large" id="catchName">Minnow</div>
+        <div class="catch-rarity-badge" id="catchRarity">Common</div>
+    </div>
+
+    <div class="inventory-area" id="inventoryList"></div>
+
+    <div class="modal-overlay" id="shopModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🛒 Rod Shop</h2>
+                <div style="display:flex; align-items:center;">
+                    <button class="index-btn" id="openIndexBtn">📘 Index</button>
+                    <button class="close-btn" id="closeShopBtn">X</button>
+                </div>
+            </div>
+            <div class="modal-list" id="shopList"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="indexModal" style="z-index: 110;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📘 Fish Index</h2>
+                <button class="close-btn" id="closeIndexBtn">X</button>
+            </div>
+            <div class="index-grid" id="indexList"></div>
+        </div>
+    </div>
+
+    <!-- MASTER JS: Firebase, Audio, Logic, and Data all inside -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // --- DATA ---
+        const cuteStarfishSvg = `
+        <svg viewBox="0 0 100 100" class="cute-starfish" style="width: 55px; height: 55px;">
+            <path d="M50 15 C54 34 68 36 85 40 C72 50 74 65 79 81 C64 72 51 72 36 81 C41 65 43 50 30 40 C47 36 51 34 50 15 Z" fill="#ff7675" stroke="#e17055" stroke-width="4.5" stroke-linejoin="round" />
+            <circle cx="39" cy="51" r="4.5" fill="#ff2a75" opacity="0.4" />
+            <circle cx="61" cy="51" r="4.5" fill="#ff2a75" opacity="0.4" />
+            <circle cx="42" cy="46" r="4" fill="#2d3436" />
+            <circle cx="41" cy="44" r="1.5" fill="#ffffff" />
+            <circle cx="58" cy="46" r="4" fill="#2d3436" />
+            <circle cx="57" cy="44" r="1.5" fill="#ffffff" />
+            <path d="M48 51 Q50 54 52 51" fill="none" stroke="#2d3436" stroke-width="2.5" stroke-linecap="round" />
+            <circle cx="50" cy="28" r="2" fill="#ffeaa7" opacity="0.8" />
+            <circle cx="70" cy="48" r="1.5" fill="#ffeaa7" opacity="0.8" />
+            <circle cx="30" cy="48" r="1.5" fill="#ffeaa7" opacity="0.8" />
+        </svg>`;
+
+        const fishTypes = [
+            { name: "Minnow", rarity: "common", value: 15, icon: "🐟", req: "Base Odds" },
+            { name: "Bluegill", rarity: "common", value: 35, icon: "🐠", req: "Base Odds" },
+            { name: "Trout", rarity: "common", value: 60, icon: "🐟", req: "Base Odds" },
+            { name: "Pink Koi", rarity: "rare", value: 250, icon: "🐡", req: "Needs Luck" },
+            { name: "Puffer", rarity: "rare", value: 400, icon: "🐡", req: "Needs Luck" },
+            { name: "Golden Bass", rarity: "legendary", value: 2500, icon: "🐟", req: "High Luck" }, 
+            { name: "Starfish", rarity: "legendary", value: 5000, icon: cuteStarfishSvg, req: "High Luck" } 
+        ];
+
+        const rodsData = [
+            { id: 0, name: "Old Rod", rarity: "common", price: 0, luck: 1, time: 6000, color: "linear-gradient(to top, #5c3a21 0%, #8b5a2b 100%)", reel: "#795548" },
+            { id: 1, name: "Basic Rod", rarity: "common", price: 500, luck: 2, time: 5000, color: "linear-gradient(to top, #b0bec5 0%, #eceff1 100%)", reel: "#cfd8dc" },
+            { id: 2, name: "Sturdy Rod", rarity: "uncommon", price: 2500, luck: 4, time: 5000, color: "linear-gradient(to top, #4caf50 0%, #81c784 100%)", reel: "#a5d6a7" },
+            { id: 3, name: "Pro Angler Rod", rarity: "rare", price: 15000, luck: 5, time: 3000, color: "linear-gradient(to top, #1976d2 0%, #64b5f6 100%)", reel: "#90caf9" },
+            { id: 4, name: "Legend's Rod", rarity: "legendary", price: 75000, luck: 6, time: 2000, color: "linear-gradient(to top, #ffb300 0%, #ffe082 100%)", reel: "#fff59d", aura: "legendary" },
+            { id: 5, name: "Poseidon's Rod", rarity: "legendary", price: 250000, luck: 8, time: 1000, color: "linear-gradient(to top, #00acc1 0%, #80deea 100%)", reel: "#b2ebf2", aura: "poseidon" }
+        ];
+
+        // --- FIREBASE ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyD1CZtAqwgyq4qW0LNyTwUCUHTNw2ibQcg",
+          authDomain: "going-fishin.firebaseapp.com",
+          projectId: "going-fishin",
+          storageBucket: "going-fishin.firebasestorage.app",
+          messagingSenderId: "572667908989",
+          appId: "1:572667908989:web:e9ab64917eda97d30a3214",
+          measurementId: "G-HY8NW1XBB6"
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- AUDIO ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+        let isAudioInitialized = false;
+
+        function playTone(freq, type, duration, vol = 0.1, drop = 0) {
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                if (drop > 0) osc.frequency.exponentialRampToValueAtTime(freq - drop, audioCtx.currentTime + duration);
+                gainNode.gain.setValueAtTime(vol, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gainNode); gainNode.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playNoise(duration, vol = 0.1, filterFreq = 1000) {
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const bufferSize = audioCtx.sampleRate * duration;
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                const noise = audioCtx.createBufferSource(); noise.buffer = buffer;
+                const filter = audioCtx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = filterFreq;
+                const gainNode = audioCtx.createGain(); gainNode.gain.setValueAtTime(vol, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                noise.connect(filter); filter.connect(gainNode); gainNode.connect(audioCtx.destination);
+                noise.start();
+            } catch (e) {}
+        }
+
+        const sfx = {
+            init: () => { try { if (audioCtx.state === 'suspended') audioCtx.resume(); } catch (e) {} },
+            click: () => playTone(600, 'sine', 0.05, 0.05),
+            splash: () => playNoise(0.4, 0.25, 800),
+            cast: () => playTone(300, 'triangle', 0.15, 0.04, 150),
+            bite: () => { playTone(800, 'sine', 0.1, 0.08); setTimeout(() => playTone(1200, 'sine', 0.1, 0.08), 100); },
+            catch: () => { playTone(523.25, 'sine', 0.1, 0.08); setTimeout(() => playTone(659.25, 'sine', 0.1, 0.08), 100); setTimeout(() => playTone(783.99, 'sine', 0.2, 0.08), 200); },
+            sell: () => { playTone(1200, 'square', 0.1, 0.02); setTimeout(() => playTone(1600, 'square', 0.15, 0.02), 100); },
+            error: () => { playTone(200, 'sawtooth', 0.1, 0.05); setTimeout(() => playTone(150, 'sawtooth', 0.2, 0.05), 150); }
+        };
+
+        const LofiEngine = {
+            ctx: audioCtx, isPlaying: false, bpm: 68, nextNoteTime: 0.0, current16thNote: 0, lookahead: 25.0, scheduleAheadTime: 0.1, timerID: null, chordStep: 0,
+            playKick(time) { try { const osc = this.ctx.createOscillator(); const gainNode = this.ctx.createGain(); const filter = this.ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.setValueAtTime(90, time); osc.frequency.setValueAtTime(60, time); osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.3); gainNode.gain.setValueAtTime(0.02, time); gainNode.gain.exponentialRampToValueAtTime(0.001, time + 0.3); osc.connect(filter); filter.connect(gainNode); gainNode.connect(this.ctx.destination); osc.start(time); osc.stop(time + 0.3); } catch(e) {} },
+            playSnare(time) { try { const osc = this.ctx.createOscillator(); const gainNode = this.ctx.createGain(); const filter = this.ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.setValueAtTime(300, time); osc.type = 'sine'; osc.frequency.setValueAtTime(175, time); gainNode.gain.setValueAtTime(0.006, time); gainNode.gain.exponentialRampToValueAtTime(0.001, time + 0.15); osc.connect(filter); filter.connect(gainNode); gainNode.connect(this.ctx.destination); osc.start(time); osc.stop(time + 0.15); } catch(e) {} },
+            playRhodesNote(time, freq, duration) { try { const osc1 = this.ctx.createOscillator(); const osc2 = this.ctx.createOscillator(); const gainNode = this.ctx.createGain(); const filter = this.ctx.createBiquadFilter(); osc1.type = 'triangle'; osc2.type = 'sine'; osc1.frequency.setValueAtTime(freq - 1.2, time); osc2.frequency.setValueAtTime(freq + 1.2, time); filter.type = 'lowpass'; filter.frequency.setValueAtTime(550, time); gainNode.gain.setValueAtTime(0, time); gainNode.gain.linearRampToValueAtTime(0.01, time + 0.2); gainNode.gain.setTargetAtTime(0.01, time + duration - 0.4, 0.5); gainNode.gain.linearRampToValueAtTime(0, time + duration); osc1.connect(filter); osc2.connect(filter); filter.connect(gainNode); gainNode.connect(this.ctx.destination); osc1.start(time); osc2.start(time); osc1.stop(time + duration); osc2.stop(time + duration); } catch(e) {} },
+            playJazzSoloNote(time, freq) { try { const osc = this.ctx.createOscillator(); const gainNode = this.ctx.createGain(); const filter = this.ctx.createBiquadFilter(); osc.type = 'sine'; osc.frequency.setValueAtTime(freq, time); filter.type = 'lowpass'; filter.frequency.setValueAtTime(1000, time); gainNode.gain.setValueAtTime(0, time); gainNode.gain.linearRampToValueAtTime(0.005, time + 0.1); gainNode.gain.exponentialRampToValueAtTime(0.001, time + 0.8); osc.connect(filter); filter.connect(gainNode); gainNode.connect(this.ctx.destination); osc.start(time); osc.stop(time + 0.8); } catch(e) {} },
+            scheduler() { while (this.nextNoteTime < this.ctx.currentTime + this.scheduleAheadTime) { this.scheduleNote(this.current16thNote, this.nextNoteTime); this.nextNoteTime += 0.25 * (60.0 / this.bpm); this.current16thNote++; if (this.current16thNote === 16) { this.current16thNote = 0; } } this.timerID = setTimeout(() => this.scheduler(), this.lookahead); },
+            scheduleNote(step, time) { if (step === 0 || step === 10) this.playKick(time); if (step === 4 || step === 12) this.playSnare(time); if (step === 0) { const jazzChords = [ [130.81, 164.81, 196.00, 246.94, 293.66], [110.00, 130.81, 164.81, 196.00, 246.94], [146.83, 174.61, 220.00, 261.63, 329.63], [97.99, 146.83, 246.94, 293.66, 349.23] ]; jazzChords[this.chordStep].forEach(freq => { this.playRhodesNote(time, freq, 3.2); }); this.chordStep = (this.chordStep + 1) % 4; } if ([2, 6, 8, 14].includes(step) && Math.random() < 0.45) { const pentatonicScale = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25]; const randomFreq = pentatonicScale[Math.floor(Math.random() * pentatonicScale.length)]; this.playJazzSoloNote(time, randomFreq); } },
+            toggle() { if (this.isPlaying) { clearTimeout(this.timerID); this.isPlaying = false; document.getElementById('musicBtn').innerHTML = "🔈 Lofi Off"; } else { try { if (this.ctx.state === 'suspended') this.ctx.resume(); } catch(e) {} this.nextNoteTime = this.ctx.currentTime + 0.05; this.current16thNote = 0; this.chordStep = 0; this.scheduler(); this.isPlaying = true; document.getElementById('musicBtn').innerHTML = "🔊 Lofi On"; } }
+        };
+
+        function userInteractiveTrigger() { if (isAudioInitialized) return; isAudioInitialized = true; try { if (audioCtx.state === 'suspended') audioCtx.resume(); } catch(e) {} if (!LofiEngine.isPlaying) LofiEngine.toggle(); }
+
+        // --- STATE & UI ---
+        let coins = 0; let inventory = []; let isFishing = false; let lineAnimFrame = null; let rippleInterval = null; let hasCastedOnce = false; let currentRodId = 0; let ownedRods = [0]; let userId = null;
+
+        const ui = {
+            ground: document.getElementById('groundArea'), pond: document.getElementById('pond'), bobber: document.getElementById('bobber'),
+            rod: document.getElementById('rod'), rodTip: document.getElementById('rodTip'), linePath: document.getElementById('linePath'),
+            status: document.getElementById('statusMessage'), coins: document.getElementById('coinCount'), inventory: document.getElementById('inventoryList'),
+            sellBtn: document.getElementById('sellBtn'), popup: document.getElementById('catchPopup'), popupIcon: document.getElementById('catchIcon'), 
+            popupName: document.getElementById('catchName'), popupRarity: document.getElementById('catchRarity'), shopModal: document.getElementById('shopModal'), 
+            openShopBtn: document.getElementById('openShopBtn'), closeShopBtn: document.getElementById('closeShopBtn'), shopList: document.getElementById('shopList'),
+            indexModal: document.getElementById('indexModal'), openIndexBtn: document.getElementById('openIndexBtn'), closeIndexBtn: document.getElementById('closeIndexBtn'), 
+            indexList: document.getElementById('indexList')
+        };
+
+        function formatMoney(num) { return num.toLocaleString('en-US'); }
+
+        let statusMsgTimeout;
+        function showMessage(text, autoFade = true) { ui.status.innerText = text; ui.status.style.opacity = '1'; clearTimeout(statusMsgTimeout); if (autoFade) { statusMsgTimeout = setTimeout(() => { ui.status.style.opacity = '0'; }, 4000); } }
+
+        async function savePlayerDataToCloud() {
+            if (!userId) { localStorage.setItem('fishin_coins', coins); localStorage.setItem('fishin_inventory', JSON.stringify(inventory.map(f => f.name))); localStorage.setItem('fishin_currentRodId', currentRodId); localStorage.setItem('fishin_ownedRods', JSON.stringify(ownedRods)); return; }
+            try { const userDocRef = doc(db, "users", userId); await setDoc(userDocRef, { coins: coins, inventory: inventory.map(f => f.name), currentRodId: currentRodId, ownedRods: ownedRods }, { merge: true }); } catch (e) { console.error(e); }
+        }
+
+        async function loadPlayerDataFromCloud(uid) {
+            if (!uid) {
+                try {
+                    let loadedCoins = parseInt(localStorage.getItem('fishin_coins')) || 0; let loadedRodId = parseInt(localStorage.getItem('fishin_currentRodId')) || 0;
+                    let localRods = localStorage.getItem('fishin_ownedRods'); let loadedRods = localRods ? JSON.parse(localRods) : [0]; if (!Array.isArray(loadedRods)) loadedRods = [0];
+                    let localInv = localStorage.getItem('fishin_inventory'); let savedFishNames = localInv ? JSON.parse(localInv) : []; if (!Array.isArray(savedFishNames)) savedFishNames = [];
+                    let loadedInventory = []; savedFishNames.forEach(name => { let actualName = (name && typeof name === 'object') ? name.name : name; let fish = fishTypes.find(f => f.name === actualName); if (fish) loadedInventory.push(fish); });
+                    return { coins: loadedCoins, currentRodId: loadedRodId, ownedRods: loadedRods, inventory: loadedInventory };
+                } catch (err) { return { coins: 0, currentRodId: 0, ownedRods: [0], inventory: [] }; }
+            }
+            try {
+                const userDocRef = doc(db, "users", uid); const docSnap = await getDoc(userDocRef);
+                if (docSnap.exists()) {
+                    let data = docSnap.data(); let savedFishNames = data.inventory || []; let loadedInventory = [];
+                    savedFishNames.forEach(name => { let actualName = (name && typeof name === 'object') ? name.name : name; let fish = fishTypes.find(f => f.name === actualName); if (fish) loadedInventory.push(fish); });
+                    return { coins: data.coins || 0, currentRodId: data.currentRodId || 0, ownedRods: data.ownedRods || [0], inventory: loadedInventory };
+                } else { return { coins: 0, currentRodId: 0, ownedRods: [0], inventory: [] }; }
+            } catch (e) { return null; }
+        }
+
+        function updateVisualsOnLoad() {
+            ui.coins.innerText = formatMoney(coins);
+            let activeRod = rodsData.find(r => r.id === currentRodId) || rodsData[0]; ui.rod.style.background = activeRod.color;
+            ui.inventory.innerHTML = '';
+            if (Array.isArray(inventory)) { inventory.forEach(fish => { if (fish) addFishToUI(fish); }); }
+        }
+
+        onAuthStateChanged(auth, async (user) => {
+            let data;
+            if (user) { userId = user.uid; data = await loadPlayerDataFromCloud(userId); } else { userId = null; data = await loadPlayerDataFromCloud(null); }
+            if (data) { coins = data.coins; currentRodId = data.currentRodId; ownedRods = data.ownedRods; inventory = data.inventory; }
+            updateVisualsOnLoad();
+        });
+
+        signInAnonymously(auth).catch(() => {});
+
+        ui.openShopBtn.addEventListener('click', () => { if (isFishing) return; userInteractiveTrigger(); sfx.click(); renderShop(); ui.shopModal.classList.add('show'); });
+        ui.closeShopBtn.addEventListener('click', () => { sfx.click(); ui.shopModal.classList.remove('show'); });
+        ui.openIndexBtn.addEventListener('click', () => { sfx.click(); renderIndex(); ui.indexModal.classList.add('show'); });
+        ui.closeIndexBtn.addEventListener('click', () => { sfx.click(); ui.indexModal.classList.remove('show'); });
+
+        function renderIndex() {
+            ui.indexList.innerHTML = '';
+            fishTypes.forEach((fish) => {
+                const fishClass = `visual-${fish.name.toLowerCase().replace(/\s+/g, '-')}`;
+                ui.indexList.innerHTML += `<div class="index-card ${fishClass}"><div class="index-icon-wrap"><span class="fish-icon">${fish.icon}</span></div><h4>${fish.name}</h4><div class="req">${fish.req}</div><div class="val">🪙 ${formatMoney(fish.value)}</div></div>`;
+            });
+        }
+
+        window.buyRod = function(id, btnElement) {
+            const rod = rodsData[id];
+            if (coins >= rod.price && !ownedRods.includes(id)) { sfx.sell(); coins -= rod.price; ui.coins.innerText = formatMoney(coins); ownedRods.push(id); btnElement.classList.add('purchased'); btnElement.innerText = "Bought!"; setTimeout(() => { window.equipRod(id); }, 300); } else if (coins < rod.price) { sfx.error(); showMessage("Not enough coins!", true); }
+        };
+
+        window.equipRod = function(id) { sfx.click(); currentRodId = id; const activeRod = rodsData.find(r => r.id === currentRodId) || rodsData[0]; ui.rod.style.background = activeRod.color; renderShop(); savePlayerDataToCloud(); };
+
+        function renderShop() {
+            ui.shopList.innerHTML = '';
+            for (let i = 0; i < rodsData.length; i++) {
+                const rod = rodsData[i]; const isOwned = ownedRods.includes(rod.id); const isEquipped = currentRodId === rod.id; const canAfford = coins >= rod.price;
+                let btnHtml = ''; if (isEquipped) { btnHtml = `<button class="buy-btn equipped">✔ Equipped</button>`; } else if (isOwned) { btnHtml = `<button class="buy-btn equip" onclick="window.equipRod(${rod.id})">Equip</button>`; } else { btnHtml = `<button class="buy-btn ${canAfford ? '' : 'disabled'}" onclick="window.buyRod(${rod.id}, this)">🪙 ${formatMoney(rod.price)}</button>`; }
+                let visualHtml = `<div class="shop-rod-visual ${rod.aura ? rod.aura + '-aura' : ''}">${rod.aura ? `<div class="aura-glow"></div>` : ''}${rod.aura === 'legendary' ? '<div class="particle p1">✨</div><div class="particle p2">✨</div>' : ''}${rod.aura === 'poseidon' ? '<div class="particle p1">🫧</div><div class="particle p2">🫧</div>' : ''}<div class="s-pole" style="background: ${rod.color};"></div><div class="s-reel" style="background: ${rod.reel};"></div></div>`;
+                ui.shopList.innerHTML += `<div class="modal-item" style="animation-delay: ${i * 0.08}s">${visualHtml}<div class="item-info"><h4>${rod.name}</h4><div class="item-stats"><span class="stat-luck">Luck: x${rod.luck}</span><span class="stat-time">Time: ${rod.time / 1000}s</span></div></div>${btnHtml}</div>`;
+            }
+        }
+
+        for (let i = 0; i < 8; i++) { let pollen = document.createElement('div'); pollen.className = 'pollen'; pollen.style.left = Math.random() * 100 + '%'; pollen.style.top = Math.random() * 60 + '%'; pollen.style.animationDelay = (Math.random() * 4) + 's'; pollen.style.animationDuration = (6 + Math.random() * 4) + 's'; ui.ground.appendChild(pollen); }
+
+        function drawFishingLine() {
+            if (!isFishing) { ui.linePath.style.display = 'none'; return; }
+            ui.linePath.style.display = 'block'; const tipRect = ui.rodTip.getBoundingClientRect(); const bobberRect = ui.bobber.getBoundingClientRect();
+            const x1 = tipRect.left + tipRect.width / 2; const y1 = tipRect.top + tipRect.height / 2; const x2 = bobberRect.left + bobberRect.width / 2; const y2 = bobberRect.top + bobberRect.height / 2;
+            const droopAmount = ui.bobber.classList.contains('bite') ? 0 : 40; 
+            ui.linePath.setAttribute('d', `M ${x1} ${y1} Q ${(x1 + x2) / 2} ${((y1 + y2) / 2) + droopAmount} ${x2} ${y2}`); lineAnimFrame = requestAnimationFrame(drawFishingLine);
+        }
+
+        ui.pond.addEventListener('click', (e) => { if (ui.shopModal.classList.contains('show') || ui.indexModal.classList.contains('show')) return; if (isFishing) { showMessage("Already casted your line!", true); sfx.error(); return; } userInteractiveTrigger(); const rect = ui.pond.getBoundingClientRect(); castLine(e.clientX - rect.left, e.clientY - rect.top); });
+
+        function createRipple(x, y) { const ripple = document.createElement('div'); ripple.className = 'ripple'; ripple.style.left = `${x}px`; ripple.style.top = `${y}px`; ripple.style.width = '35px'; ripple.style.height = '35px'; ripple.style.animation = 'ripple-effect 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards'; ui.pond.appendChild(ripple); setTimeout(() => ripple.remove(), 900); }
+
+        function castLine(x, y) {
+            isFishing = true; hasCastedOnce = true; sfx.cast(); ui.bobber.style.left = `${x}px`; ui.bobber.style.top = `${y}px`;
+            setTimeout(() => { sfx.splash(); createRipple(x, y); ui.bobber.classList.remove('bite'); ui.bobber.classList.add('active'); }, 300);
+            ui.rod.style.transform = "rotate(-18deg)"; drawFishingLine(); showMessage("Quietly waiting...", true);
+            rippleInterval = setInterval(() => { if (isFishing && !ui.bobber.classList.contains('bite')) { createRipple(parseInt(ui.bobber.style.left), parseInt(ui.bobber.style.top)); } }, 1400);
+            const activeRod = rodsData.find(r => r.id === currentRodId) || rodsData[0]; setTimeout(checkBite, activeRod.time);
+        }
+
+        function checkBite() { if (!isFishing) return; Math.random() <= 0.85 ? fishBite() : fishIgnored(); }
+        function fishIgnored() { showMessage("Nothing's biting...", true); ui.rod.style.transform = "rotate(-25deg)"; setTimeout(() => { resetFishingState(); }, 600); }
+        function fishBite() { clearInterval(rippleInterval); sfx.bite(); ui.bobber.classList.add('bite'); ui.rod.style.transform = "rotate(-3deg)"; createRipple(parseInt(ui.bobber.style.left), parseInt(ui.bobber.style.top)); showMessage("Oh! A bite!", false); ui.status.style.color = "#ffb703"; ui.status.style.textShadow = "0 2px 4px rgba(0,0,0,0.4)"; setTimeout(reelInFish, 600); }
+        function reelInFish() { if (!ui.bobber.classList.contains('bite')) return; sfx.cast(); ui.rod.style.transform = "rotate(-45deg)"; setTimeout(() => { resetFishingState(); ui.status.style.color = "#fff"; showCatchPopup(); }, 500); }
+        function resetFishingState() { ui.rod.style.transform = "rotate(60deg)"; ui.bobber.classList.remove('active', 'bite'); isFishing = false; clearInterval(rippleInterval); cancelAnimationFrame(lineAnimFrame); ui.linePath.style.display = 'none'; }
+
+        function showCatchPopup() {
+            const fish = rollForFish(); sfx.catch(); const fishClass = `visual-${fish.name.toLowerCase().replace(/\s+/g, '-')}`;
+            ui.popupIcon.innerHTML = `<span class="fish-icon">${fish.icon}</span>`; ui.popupName.innerText = fish.name; ui.popupRarity.innerText = fish.rarity; ui.popup.className = `catch-popup popup-${fish.rarity} ${fishClass}`; ui.popup.classList.add('show'); ui.status.style.opacity = '0';
+            setTimeout(() => { ui.popup.classList.remove('show'); inventory.push(fish); addFishToUI(fish); savePlayerDataToCloud(); }, 2100);
+        }
+
+        function rollForFish() {
+            const activeRod = rodsData.find(r => r.id === currentRodId) || rodsData[0]; const rodLuck = activeRod.luck; let wCommon = 100; let wRare = 15 * rodLuck; let wLegendary = 3 * rodLuck;
+            let roll = Math.random() * (wCommon + wRare + wLegendary); let rarityCategory = roll < wLegendary ? "legendary" : roll < wLegendary + wRare ? "rare" : "common";
+            const possibleFish = fishTypes.filter(f => f.rarity === rarityCategory); return possibleFish[Math.floor(Math.random() * possibleFish.length)];
+        }
+
+        function addFishToUI(fish) { const fishClass = `visual-${fish.name.toLowerCase().replace(/\s+/g, '-')}`; const card = document.createElement('div'); card.className = `fish-card fish-${fish.rarity} ${fishClass}`; card.innerHTML = `<span class="fish-icon">${fish.icon}</span><span class="fish-value">🪙 ${formatMoney(fish.value)}</span>`; ui.inventory.prepend(card); }
+
+        ui.sellBtn.addEventListener('click', () => {
+            if (inventory.length === 0) { sfx.error(); showMessage("No fish to sell yet!", true); return; } sfx.sell();
+            let totalValue = inventory.reduce((sum, fish) => sum + fish.value, 0); coins += totalValue; ui.coins.innerText = formatMoney(coins); ui.coins.style.color = "#ffd700"; setTimeout(() => { ui.coins.style.color = "var(--text-main)"; }, 300);
+            inventory = []; ui.inventory.innerHTML = ''; showMessage(`Sold catch for 🪙${formatMoney(totalValue)}!`, true); if (ui.shopModal.classList.contains('show')) renderShop(); savePlayerDataToCloud();
+        });
+
+        document.getElementById('musicBtn').addEventListener('click', () => { userInteractiveTrigger(); LofiEngine.toggle(); });
+
+        const loadingBar = document.getElementById('loadingBar');
+        const loadingScreen = document.getElementById('loadingScreen');
+        let hasStarted = false;
+        function startGame() { if (hasStarted) return; hasStarted = true; userInteractiveTrigger(); sfx.init(); loadingScreen.style.opacity = '0'; setTimeout(() => { loadingScreen.style.display = 'none'; if (!hasCastedOnce) showMessage("Tap the pond to cast your line!", false); }, 400); }
+        setTimeout(() => { if (loadingBar) loadingBar.style.width = '100%'; }, 100);
+        setTimeout(() => { startGame(); }, 2800);
+        if (loadingScreen) { loadingScreen.addEventListener('click', startGame); loadingScreen.addEventListener('touchstart', startGame); }
+    </script>
+</body>
+</html>
