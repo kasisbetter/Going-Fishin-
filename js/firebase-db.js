@@ -4,7 +4,7 @@ import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gsta
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { fishTypes } from './fish-data.js';
 
-// Your personalized Firebase credentials [1]
+// Firebase Credentials Config [1]
 const firebaseConfig = {
   apiKey: "AIzaSyD1CZtAqwgyq4qW0LNyTwUCUHTNw2ibQcg",
   authDomain: "going-fishin.firebaseapp.com",
@@ -15,7 +15,6 @@ const firebaseConfig = {
   measurementId: "G-HY8NW1XBB6"
 };
 
-// Initialize services
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 const db = getFirestore(app);
@@ -39,7 +38,7 @@ export async function savePlayerDataToCloud(userId, coins, inventory, currentRod
         }, { merge: true });
         console.log("Cloud save success.");
     } catch (e) {
-        console.error("Cloud save bypassed. Saving locally... ", e);
+        console.error("Cloud saving bypassed. Saving locally... ", e);
     }
 }
 
@@ -66,7 +65,6 @@ export async function loadPlayerDataFromCloud(userId) {
             
             const loadedInventory = [];
             savedFishNames.forEach(name => {
-                // Safeguard: Handle both older object saving formats and newer string formats
                 const actualName = (name && typeof name === 'object') ? name.name : name;
                 const fish = fishTypes.find(f => f.name === actualName);
                 if (fish) loadedInventory.push(fish);
@@ -74,7 +72,7 @@ export async function loadPlayerDataFromCloud(userId) {
             
             return { coins: loadedCoins, currentRodId: loadedRodId, ownedRods: loadedRods, inventory: loadedInventory };
         } catch (err) {
-            console.warn("LocalStorage corrupted or obsolete, resetting profiles safely:", err);
+            console.warn("LocalStorage reset cleanly:", err);
             return { coins: 0, currentRodId: 0, ownedRods: [0], inventory: [] };
         }
     }
